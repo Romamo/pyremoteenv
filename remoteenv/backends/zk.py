@@ -98,7 +98,6 @@ class ZooBackend(BackendBase):
 
     def get_many(self, *paths: str, default: str = None) -> list[tuple[str, str]]:
         for path in ['', *paths]:
-            print(path)
             try:
                 children = self._zk.get_children(self._create_path(path))
             except kazoo.exceptions.NoNodeError:
