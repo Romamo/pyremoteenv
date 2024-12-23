@@ -36,8 +36,7 @@ with env:
 
     print("Reading with path filters...")
     variables_remote = {}
-    for k, v in env.get_many('service_1/host_4/DATABASE_DEFAULT_HOST', 'service_1/*', 'host_4/*',
-                             'service_1/host_4/*'):
+    for k, v in env.get_many('service_1', 'host_4', 'service_1/host_4'):
         variables_remote[k] = v
     print(variables_remote)
 

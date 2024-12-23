@@ -96,30 +96,19 @@ class ZooBackend(BackendBase):
             return default
         return data.decode()
 
-    @staticmethod
-    def _iterate(paths) -> tuple[str, bool]:
-        yield '', True
-        for p in paths:
-            if p.endswith('*'):
-                yield p[:-1], True
-            else:
-                yield p, False
-
     def get_many(self, *paths: str, default: str = None) -> list[tuple[str, str]]:
-        for path, with_children in self._iterate(paths):
-            # print(path, with_children)
-            if with_children:
-                try:
-                    children = self._zk.get_children(self._create_path(path))
-                except kazoo.exceptions.NoNodeError:
-                    continue
-                for child in children:
-                    data, stat = self._zk.get(self._create_path(path, child))
-                    if data != b'':
-                        # print(f"{path}: {child}={data.decode()}")
-                        yield child, data.decode()
-            else:
-                yield path.split('/')[-1], self.get(path, default)
+        for path in ['', *paths]:
+            print(path)
+            try:
+                children = self._zk.get_children(self._create_path(path))
+            except kazoo.exceptions.NoNodeError:
+                continue
+            for child in children:
+                data, stat = self._zk.get(self._create_path(path, child))
+                if data != b'':
+                    # print(f"{path}: {child}={data.decode()}")
+                    yield child, data.decode()
+
 
     def delete(self, path: str, recursive=False):
         self._zk.delete(self._create_path(path), recursive=recursive)
