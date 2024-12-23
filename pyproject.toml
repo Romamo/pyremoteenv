@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyremoteenv"
+version = "0.2.2"
+description = "Remote env for python"
+readme = "README.md"
+authors = [
+    { name = "Roman Medvedev", email = "pypi@romavm.dev" }
+]
+license = { text = "MIT License" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+requires-python = ">=3.9"
+urls = { Homepage = "https://github.com/Romamo/pyremoteenv" }
+keywords = ["zookeeper", "config-management", "remote", "environment", "kazoo"]
+dependencies = []
+
+[project.optional-dependencies]
+zk = ["kazoo"]
+
+[tool.setuptools.packages.find]
+include = ["*"]
