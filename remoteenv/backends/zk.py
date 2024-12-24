@@ -1,3 +1,5 @@
+import os
+
 from .base import BackendBase
 
 try:
@@ -10,12 +12,25 @@ import kazoo.exceptions
 from kazoo.handlers.threading import KazooTimeoutError
 
 class ZooBackend(BackendBase):
-    def __init__(self, prefix, hosts):
+    def __init__(self, hosts: str = None, znode: str = None):
         if not kazoo:
             raise RuntimeError(
-                "The 'kazoo' library is required to use ZooBackend. Install it with 'pip install kazoo'.")
+                "The 'kazoo' library is required to use ZooBackend. Install it with 'pip install kazoo'")
 
-        self._prefix = prefix
+        if hosts is None:
+            hosts = os.environ.get('REMOTEENV_ZK_HOSTS')
+        if hosts is None:
+            hosts = 'localhost:2181'
+
+        if znode is None:
+            znode = os.environ.get('REMOTEENV_ZK_ZNODE')
+        if znode is None:
+            znode = '/remoteenv'
+        elif not znode.startswith('/'):
+            znode = '/' + znode
+
+        self._znode = znode
+
         self._zk = KazooClient(hosts=hosts)
 
     def __enter__(self):
@@ -42,8 +57,8 @@ class ZooBackend(BackendBase):
 
     def _create_path(self, *path: str):
         if path:
-            return f"/{self._prefix}/{'/'.join(path)}"
-        return f"/{self._prefix}"
+            return f"{self._znode}/{'/'.join(path)}"
+        return f"{self._znode}"
     
     def dump(self) -> list[tuple[str, str]]:
         # recursively dump all nodes
@@ -55,12 +70,12 @@ class ZooBackend(BackendBase):
             for child in children:
                 data, stat = self._zk.get(f"{fullpath}/{child}")
                 if data != b'':
-                    if fullpath == f"/{self._prefix}":
-                        # print(f"{child}={data.decode()}, {stat.version}, {stat.numChildren} -> {path[2 + len(self._prefix):]}/{child} [{len(path)}")
+                    if fullpath == self._znode:
+                        # print(f"{child}={data.decode()}, {stat.version}, {stat.numChildren} -> {path[2 + len(self._znode):]}/{child} [{len(path)}")
                         yield child, data.decode()
                     else:
-                        # print(f"{path}/{child}={data.decode()}, {stat.version}, {stat.numChildren} -> {path[2+len(self._prefix):]}/{child} [{len(path)}")
-                        yield f"{fullpath[2+len(self._prefix):]}/{child}", data.decode()
+                        # print(f"{path}/{child}={data.decode()}, {stat.version}, {stat.numChildren} -> {path[2+len(self._znode):]}/{child} [{len(path)}")
+                        yield f"{fullpath[1+len(self._znode):]}/{child}", data.decode()
                 for t in dump_node(f"{fullpath}/{child}"):
                     yield t
 
@@ -84,7 +99,7 @@ class ZooBackend(BackendBase):
             self._zk.create(fullpath, value.encode(), makepath=True)
 
 
-    def set_many(self, pairs: list[tuple[str, str]]=None):
+    def set_many(self, pairs: list[tuple[str, str]] = None, **kwargs):
         for k, v in pairs:
             # print(f"{k}={v}")
             self.set(k, v)
@@ -109,7 +124,7 @@ class ZooBackend(BackendBase):
                     yield child, data.decode()
 
 
-    def delete(self, path: str, recursive=False):
+    def delete(self, path: str, recursive = False):
         self._zk.delete(self._create_path(path), recursive=recursive)
 
     def delete_many(self, *paths: str, exclude_paths: list[str] = None):

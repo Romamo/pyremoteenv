@@ -1,0 +1,2 @@
+class CannotStartBackend(Exception):
+    pass
